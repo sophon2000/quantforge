@@ -1,0 +1,60 @@
+package main
+
+// 这是使用示例，已经重构到 client.go 中
+// 请参考下面的示例代码使用 ibkr 包
+
+/*
+import (
+	"time"
+	"yourproject/ibkr"
+)
+
+func main() {
+	// 创建客户端
+	client := ibkr.NewClient()
+
+	// 配置连接
+	config := &ibkr.Config{
+		Host:     "127.0.0.1",
+		Port:     7497,
+		ClientID: 0,
+		Timeout:  30 * time.Second,
+	}
+
+	// 连接
+	err := client.Connect(config)
+	if err != nil {
+		panic(err)
+	}
+	defer client.Disconnect()
+
+	// 获取管理的账户
+	accounts := client.ManagedAccounts()
+
+	// 账户信息
+	accountValues := client.AccountValues()
+	portfolio := client.Portfolio()
+
+	// 合约
+	amd := ibkr.NewStock("AMD", "", "")
+	contractDetails, _ := client.ReqContractDetails(amd)
+
+	// 历史数据
+	bars, _ := client.GetHistoricalBars(
+		amd,
+		time.Now(),
+		"1 D",
+		"1 min",
+		"TRADES",
+		true,
+	)
+
+	// 下单
+	order := ibkr.LimitOrder("BUY", ibkr.StringToDecimal("100"), 150.0)
+	trade := client.PlaceOrder(amd, order)
+
+	// 快照
+	snapshot, _ := client.Snapshot(amd)
+	price := snapshot.MarketPrice()
+}
+*/

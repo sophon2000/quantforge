@@ -1,6 +1,7 @@
-package engine
+package execution
 
-type Position struct {
+// TradingRecord 交易记录（用于统计/回测）
+type TradingRecord struct {
 	ID           string
 	Symbol       string
 	Quantity     int

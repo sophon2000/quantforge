@@ -1,7 +1,7 @@
 package strategy
 
 import (
-	"quantforge/indicator"
+	"quantforge/datasource"
 
 	"github.com/sdcoffey/techan"
 )
@@ -9,54 +9,54 @@ import (
 // BuildBollingerStrategy 构建布林带策略的便捷函数
 func BuildBollingerStrategy(series *techan.TimeSeries, period int, stdDev float64) techan.RuleStrategy {
 	closePrices := techan.NewClosePriceIndicator(series)
-	upper, middle, lower := indicator.BollingerBands(closePrices, period, stdDev)
+	upper, middle, lower := datasource.BollingerBands(closePrices, period, stdDev)
 	return BollingerBandStrategy(closePrices, upper, middle, lower)
 }
 
 // BuildBollingerMeanReversionStrategy 构建布林带均值回归策略
 func BuildBollingerMeanReversionStrategy(series *techan.TimeSeries, period int, stdDev float64) techan.RuleStrategy {
 	closePrices := techan.NewClosePriceIndicator(series)
-	upper, middle, lower := indicator.BollingerBands(closePrices, period, stdDev)
+	upper, middle, lower := datasource.BollingerBands(closePrices, period, stdDev)
 	return BollingerBandMeanReversionStrategy(closePrices, upper, middle, lower)
 }
 
 // BuildMACDStrategy 构建 MACD 金叉死叉策略
 func BuildMACDStrategy(series *techan.TimeSeries, fastPeriod, slowPeriod, signalPeriod int) techan.RuleStrategy {
 	closePrices := techan.NewClosePriceIndicator(series)
-	macd, signal, _ := indicator.MACD(closePrices, fastPeriod, slowPeriod, signalPeriod)
+	macd, signal, _ := datasource.MACD(closePrices, fastPeriod, slowPeriod, signalPeriod)
 	return MACDCrossoverStrategy(macd, signal)
 }
 
 // BuildMACDHistogramStrategy 构建 MACD 柱状图策略
 func BuildMACDHistogramStrategy(series *techan.TimeSeries, fastPeriod, slowPeriod, signalPeriod int) techan.RuleStrategy {
 	closePrices := techan.NewClosePriceIndicator(series)
-	_, _, histogram := indicator.MACD(closePrices, fastPeriod, slowPeriod, signalPeriod)
+	_, _, histogram := datasource.MACD(closePrices, fastPeriod, slowPeriod, signalPeriod)
 	return MACDHistogramStrategy(histogram)
 }
 
 // BuildRSIStrategy 构建 RSI 策略
 func BuildRSIStrategy(series *techan.TimeSeries, period int, oversold, overbought float64) techan.RuleStrategy {
 	closePrices := techan.NewClosePriceIndicator(series)
-	rsi := indicator.RSI(closePrices, period)
+	rsi := datasource.RSI(closePrices, period)
 	return RSIStrategy(rsi, oversold, overbought)
 }
 
 // BuildRSIDivergenceStrategy 构建 RSI 背离策略
 func BuildRSIDivergenceStrategy(series *techan.TimeSeries, period int) techan.RuleStrategy {
 	closePrices := techan.NewClosePriceIndicator(series)
-	rsi := indicator.RSI(closePrices, period)
+	rsi := datasource.RSI(closePrices, period)
 	return RSIDivergenceStrategy(rsi)
 }
 
 // BuildKDJCrossoverStrategy 构建 KDJ 金叉死叉策略
 func BuildKDJCrossoverStrategy(series *techan.TimeSeries, period, smoothK, smoothD int) techan.RuleStrategy {
-	k, d, j := indicator.KDJ(series, period, smoothK, smoothD)
+	k, d, j := datasource.KDJ(series, period, smoothK, smoothD)
 	return KDJCrossoverStrategy(k, d, j)
 }
 
 // BuildKDJOversoldOverboughtStrategy 构建 KDJ 超买超卖策略
 func BuildKDJOversoldOverboughtStrategy(series *techan.TimeSeries, period, smoothK, smoothD int) techan.RuleStrategy {
-	_, _, j := indicator.KDJ(series, period, smoothK, smoothD)
+	_, _, j := datasource.KDJ(series, period, smoothK, smoothD)
 	return KDJOversoldOverboughtStrategy(j)
 }
 
@@ -65,13 +65,13 @@ func BuildMultiIndicatorStrategy(series *techan.TimeSeries) techan.RuleStrategy 
 	closePrices := techan.NewClosePriceIndicator(series)
 
 	// MACD (12, 26, 9)
-	macd, signal, _ := indicator.MACD(closePrices, 12, 26, 9)
+	macd, signal, _ := datasource.MACD(closePrices, 12, 26, 9)
 
 	// RSI (14)
-	rsi := indicator.RSI(closePrices, 14)
+	rsi := datasource.RSI(closePrices, 14)
 
 	// 布林带 (20, 2)
-	_, _, lower := indicator.BollingerBands(closePrices, 20, 2.0)
+	_, _, lower := datasource.BollingerBands(closePrices, 20, 2.0)
 
 	return MultiIndicatorStrategy(closePrices, macd, signal, rsi, lower)
 }
@@ -81,13 +81,13 @@ func BuildTrendFollowingStrategy(series *techan.TimeSeries) techan.RuleStrategy 
 	closePrices := techan.NewClosePriceIndicator(series)
 
 	// MACD (12, 26, 9)
-	macd, _, _ := indicator.MACD(closePrices, 12, 26, 9)
+	macd, _, _ := datasource.MACD(closePrices, 12, 26, 9)
 
 	// RSI (14)
-	rsi := indicator.RSI(closePrices, 14)
+	rsi := datasource.RSI(closePrices, 14)
 
 	// 布林带中轨 (20, 2)
-	_, middle, _ := indicator.BollingerBands(closePrices, 20, 2.0)
+	_, middle, _ := datasource.BollingerBands(closePrices, 20, 2.0)
 
 	return TrendFollowingStrategy(closePrices, macd, rsi, middle)
 }

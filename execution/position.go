@@ -1,6 +1,7 @@
-package engine
+package execution
 
-type TradingRecord struct {
+// Position 持仓
+type Position struct {
 	ID           string
 	Symbol       string
 	Quantity     int

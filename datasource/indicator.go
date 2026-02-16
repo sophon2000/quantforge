@@ -1,10 +1,11 @@
-package indicator
+package datasource
 
 import (
 	"github.com/sdcoffey/big"
 	"github.com/sdcoffey/techan"
 )
 
+// IndicatorSet 常用指标集合（techan）
 type IndicatorSet struct {
 	MA   techan.Indicator
 	EMA  techan.Indicator
@@ -40,11 +41,9 @@ func ExponentialMovingAverage(series techan.Indicator, period int) techan.Indica
 	return techan.NewEMAIndicator(series, period)
 }
 
-// (20,2)
+// BollingerBands 布林带 (period, stdDev)，如 (20, 2)
 func BollingerBands(series techan.Indicator, period int, stdDev float64) (
-	upper techan.Indicator,
-	middle techan.Indicator,
-	lower techan.Indicator,
+	upper, middle, lower techan.Indicator,
 ) {
 	middle = techan.NewSimpleMovingAverage(series, period)
 	upper = techan.NewBollingerUpperBandIndicator(series, period, stdDev)
@@ -52,50 +51,34 @@ func BollingerBands(series techan.Indicator, period int, stdDev float64) (
 	return
 }
 
-// (6,12,24)
+// RSI 相对强弱指数，如 period=14
 func RSI(series techan.Indicator, period int) techan.Indicator {
 	return techan.NewRelativeStrengthIndexIndicator(series, period)
 }
 
-// (9,3,3)
+// KDJ 随机指标 (period, smoothK, smoothD)，如 (9, 3, 3)
 func KDJ(series *techan.TimeSeries, period int, smoothK int, smoothD int) (
-	k techan.Indicator,
-	d techan.Indicator,
-	j techan.Indicator,
+	k, d, j techan.Indicator,
 ) {
-	// RSV
 	fastK := techan.NewFastStochasticIndicator(series, period)
-
-	// 平滑K
 	k = techan.NewEMAIndicator(fastK, smoothK)
-
-	// 平滑D
 	d = techan.NewEMAIndicator(k, smoothD)
-
-	// J = 3K - 2D
 	j = &FormulaIndicator{
-		formula: func(i int) big.Decimal {
+		Formula: func(i int) big.Decimal {
 			kVal := k.Calculate(i)
 			dVal := d.Calculate(i)
-			return kVal.Mul(big.NewDecimal(3)).
-				Sub(dVal.Mul(big.NewDecimal(2)))
+			return kVal.Mul(big.NewDecimal(3)).Sub(dVal.Mul(big.NewDecimal(2)))
 		},
 	}
-
 	return
 }
 
-// (12, 26, 9)
+// MACD (fastPeriod, slowPeriod, signalPeriod)，如 (12, 26, 9)
 func MACD(series techan.Indicator, fastPeriod int, slowPeriod int, signalPeriod int) (
-	macd techan.Indicator,
-	signal techan.Indicator,
-	histogram techan.Indicator,
+	macd, signal, histogram techan.Indicator,
 ) {
-	// 快线
 	macd = techan.NewMACDIndicator(series, fastPeriod, slowPeriod)
-	// 慢线
 	signal = techan.NewEMAIndicator(macd, signalPeriod)
-	// 柱状图
 	histogram = techan.NewMACDHistogramIndicator(macd, signalPeriod)
 	return
 }

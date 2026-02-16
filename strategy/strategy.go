@@ -3,8 +3,8 @@ package strategy
 import (
 	"time"
 
-	"quantforge/datasource"
-	"quantforge/execution"
+	"quantforge/dataengine"
+	"quantforge/executionengine"
 
 	"github.com/sdcoffey/big"
 	"github.com/sdcoffey/techan"
@@ -12,9 +12,9 @@ import (
 
 // Strategy 策略接口：响应行情、K 线、订单更新
 type Strategy interface {
-	OnTick(t *datasource.Tick)
-	OnBar(b *datasource.Bar)
-	OnOrderUpdate(order *execution.Order)
+	OnTick(t *dataengine.Tick)
+	OnBar(b *dataengine.Bar)
+	OnOrderUpdate(order *executionengine.Order)
 }
 
 func StrategyOne(indicator techan.Indicator) techan.RuleStrategy {

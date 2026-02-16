@@ -1,8 +1,8 @@
 package risk
 
-import "quantforge/execution"
+import "quantforge/executionengine"
 
 // RiskManager 风控：下单前校验
 type RiskManager interface {
-	Check(order *execution.Order) error
+	Check(order *executionengine.Order) error
 }

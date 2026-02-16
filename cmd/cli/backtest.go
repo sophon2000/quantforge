@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"quantforge/datasource"
+	"quantforge/backtestengine/matchingengine"
+	"quantforge/dataengine/historicalstore"
+	"quantforge/strategyengine/indicatorlib"
 
 	"github.com/sdcoffey/techan"
 	"github.com/spf13/cobra"
@@ -24,7 +26,8 @@ func init() {
 func runBacktest(cmd *cobra.Command, _ []string) error {
 	symbol, _ := cmd.Flags().GetString("symbol")
 
-	rows, err := datasource.GetData("")
+	store := historicalstore.NewCSVStore("")
+	rows, err := store.LoadCSV("")
 	if err != nil {
 		return fmt.Errorf("获取数据: %w", err)
 	}
@@ -33,14 +36,16 @@ func runBacktest(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("未找到标的: %s", symbol)
 	}
 
-	series, err := datasource.GenerateSeries(searchRows)
+	series, err := store.TimeSeries(searchRows)
 	if err != nil {
 		return fmt.Errorf("生成序列: %w", err)
 	}
 
 	closePrice := techan.NewClosePriceIndicator(series)
-	upper, middle, lower := datasource.BollingerBands(closePrice, 20, 2)
-	k, d, j := datasource.KDJ(series, 9, 3, 3)
+	upper, middle, lower := indicatorlib.BollingerBands(closePrice, 20, 2)
+	k, d, j := indicatorlib.KDJ(series, 9, 3, 3)
+
+	_ = matchingengine.NewDefaultMatchingEngine(nil) // 示意使用 BacktestEngine
 
 	for i := 0; i < 1000; i++ {
 		time.Sleep(100 * time.Millisecond)

@@ -1,12 +1,12 @@
 package risk
 
-import "quantforge/execution"
+import "quantforge/executionengine"
 
 // DefaultRiskManager 默认风控：仅做通过校验（不拒绝任何订单）
 type DefaultRiskManager struct{}
 
 // Check 实现 RiskManager，直接通过
-func (DefaultRiskManager) Check(order *execution.Order) error {
+func (DefaultRiskManager) Check(order *executionengine.Order) error {
 	return nil
 }
 

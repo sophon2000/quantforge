@@ -33,3 +33,11 @@ func (g *DefaultSignalGenerator) SetOnSignal(fn func(strategyengine.Signal)) {
 	defer g.mu.Unlock()
 	g.onSignal = fn
 }
+
+// DefaultSignalEngine 默认信号引擎（与 DefaultSignalGenerator 同义）
+type DefaultSignalEngine = DefaultSignalGenerator
+
+// NewDefaultSignalEngine 构造（与 NewDefaultSignalGenerator 同义）
+func NewDefaultSignalEngine(onSignal func(strategyengine.Signal)) *DefaultSignalGenerator {
+	return NewDefaultSignalGenerator(onSignal)
+}

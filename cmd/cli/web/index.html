@@ -37,9 +37,16 @@
     <label>标的 <input type="text" id="symbol" value="AAPL" placeholder="AAPL"></label>
     <label>策略
       <select id="strategy">
-        <option value="bollinger">布林带</option>
-        <option value="macd">MACD</option>
-        <option value="rsi">RSI</option>
+        <option value="bollinger">布林带突破</option>
+        <option value="bollinger-mean-reversion">布林带均值回归</option>
+        <option value="macd">MACD 金叉死叉</option>
+        <option value="macd-histogram">MACD 柱状图</option>
+        <option value="rsi">RSI 超买超卖</option>
+        <option value="rsi-divergence">RSI 背离</option>
+        <option value="kdj-crossover">KDJ 金叉死叉</option>
+        <option value="kdj-extreme">KDJ 超买超卖</option>
+        <option value="multi-indicator">多指标组合</option>
+        <option value="trend-following">趋势跟踪</option>
       </select>
     </label>
     <label>初始资金 <input type="number" id="cash" value="100000" min="1000" step="10000"></label>
@@ -74,6 +81,19 @@
     let chartDom = document.getElementById('main');
     let myChart = echarts.init(chartDom);
 
+    const strategyDisplayNames = {
+      'bollinger': '布林带突破',
+      'bollinger-mean-reversion': '布林带均值回归',
+      'macd': 'MACD 金叉死叉',
+      'macd-histogram': 'MACD 柱状图',
+      'rsi': 'RSI 超买超卖',
+      'rsi-divergence': 'RSI 背离',
+      'kdj-crossover': 'KDJ 金叉死叉',
+      'kdj-extreme': 'KDJ 超买超卖',
+      'multi-indicator': '多指标组合',
+      'trend-following': '趋势跟踪'
+    };
+
     function getApiBase() {
       return window.location.origin;
     }
@@ -100,13 +120,15 @@
         itemStyle: { color: (v[1] >= v[0]) ? upColor : downColor }
       }));
 
-      const buyPoints = signals.filter(s => s.type === 'BUY').map(s => ({
+      // 与图表 markPoint 使用同一份列表，只取有效项（有 date、price、type）
+      const validSignals = signals.filter(s => s && (s.type === 'BUY' || s.type === 'SELL') && s.date != null && typeof s.price === 'number');
+      const buyPoints = validSignals.filter(s => s.type === 'BUY').map(s => ({
         name: '买',
         coord: [s.date, s.price],
         value: s.price.toFixed(2),
         itemStyle: { color: downColor }
       }));
-      const sellPoints = signals.filter(s => s.type === 'SELL').map(s => ({
+      const sellPoints = validSignals.filter(s => s.type === 'SELL').map(s => ({
         name: '卖',
         coord: [s.date, s.price],
         value: s.price.toFixed(2),
@@ -114,8 +136,9 @@
       }));
 
       return {
+        _signalsForList: validSignals,
         title: {
-          text: data.symbol + ' - ' + (data.strategy === 'bollinger' ? '布林带' : data.strategy === 'macd' ? 'MACD' : 'RSI') + ' 回测',
+          text: data.symbol + ' - ' + (strategyDisplayNames[data.strategy] || data.strategy) + ' 回测',
           left: 0,
           textStyle: { color: '#eee' }
         },
@@ -265,6 +288,10 @@
     function compareSignals(a, b) {
       let va = a[sortKey], vb = b[sortKey];
       if (sortKey === 'date') {
+        // 按真实时间排序，避免 "2014/12/8" 被字符串排到 "2014/12/31" 后面
+        const ta = new Date(String(va).replace(/\//g, '-')).getTime();
+        const tb = new Date(String(vb).replace(/\//g, '-')).getTime();
+        if (!isNaN(ta) && !isNaN(tb)) return sortDir * (ta - tb);
         return sortDir * (String(va).localeCompare(String(vb)));
       }
       if (sortKey === 'price') {
@@ -297,7 +324,7 @@
     }
 
     function showSignalsList(signals) {
-      currentSignals = signals || [];
+      currentSignals = Array.isArray(signals) ? signals : [];
       const sorted = currentSignals.slice().sort(compareSignals);
       const tbody = document.getElementById('signals-tbody');
       tbody.innerHTML = '';
@@ -305,13 +332,16 @@
       updateSortIndicators();
       sorted.forEach((s, i) => {
         const tr = document.createElement('tr');
-        const typeCls = s.type === 'BUY' ? 'type-buy' : 'type-sell';
+        const typeCls = (s && s.type === 'BUY') ? 'type-buy' : 'type-sell';
+        const dateStr = (s && s.date != null) ? String(s.date) : '—';
+        const priceNum = (s && typeof s.price === 'number') ? s.price : NaN;
+        const priceStr = Number.isFinite(priceNum) ? priceNum.toFixed(2) : '—';
         let returnHtml = '—';
-        if (s.type === 'SELL' && s.returnPct != null) {
+        if (s && s.type === 'SELL' && s.returnPct != null && typeof s.returnPct === 'number') {
           const cls = s.returnPct >= 0 ? 'return-pct positive' : 'return-pct negative';
           returnHtml = '<span class="' + cls + '">' + s.returnPct.toFixed(2) + '%</span>';
         }
-        tr.innerHTML = '<td>' + (i + 1) + '</td><td>' + s.date + '</td><td class="' + typeCls + '">' + s.type + '</td><td>' + s.price.toFixed(2) + '</td><td>' + returnHtml + '</td>';
+        tr.innerHTML = '<td>' + (i + 1) + '</td><td>' + dateStr + '</td><td class="' + typeCls + '">' + (s && s.type ? s.type : '—') + '</td><td>' + priceStr + '</td><td>' + returnHtml + '</td>';
         tbody.appendChild(tr);
       });
     }
@@ -350,7 +380,8 @@
           returnPct: s.returnPct,
           position: s.position
         });
-        showSignalsList(data.signals || []);
+        // 与 markPoint 使用同一份数据，保证列表条数一致
+        showSignalsList(option._signalsForList != null ? option._signalsForList : (data.signals || []));
       } catch (e) {
         setError('请求失败: ' + e.message);
       }

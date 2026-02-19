@@ -30,10 +30,10 @@ type BacktestResult struct {
 	BollUpper    []interface{} `json:"bollUpper"`  // 布林上轨
 	BollMiddle   []interface{} `json:"bollMiddle"` // 布林中轨
 	BollLower    []interface{} `json:"bollLower"`  // 布林下轨
-	Volumes      []int64       `json:"volumes"`   // 成交量，与 categoryData 一一对应
-	MacdDIF      []interface{} `json:"macdDIF"`   // MACD DIF (12,26,9)
-	MacdDEA      []interface{} `json:"macdDEA"`   // MACD DEA
-	MacdHist     []interface{} `json:"macdHist"`  // MACD 柱 (DIF-DEA)*2
+	Volumes      []int64       `json:"volumes"`    // 成交量，与 categoryData 一一对应
+	MacdDIF      []interface{} `json:"macdDIF"`    // MACD DIF (12,26,9)
+	MacdDEA      []interface{} `json:"macdDEA"`    // MACD DEA
+	MacdHist     []interface{} `json:"macdHist"`   // MACD 柱 (DIF-DEA)*2
 	Summary      Summary       `json:"summary"`
 }
 
@@ -104,6 +104,7 @@ func RunBacktest(symbol, strategyName string, initialCash float64, quantity int)
 	}
 
 	ruleBuilder := pickRuleBuilder(strategyName)
+
 	strat := strategyinterface.NewTechanStrategy(symbol, ruleBuilder, onSignal)
 
 	categoryData := make([]string, 0, len(bars))
@@ -310,15 +311,53 @@ func csvRowsToBars(symbol string, rows []historicalstore.CSVRow) ([]*dataengine.
 	return out, nil
 }
 
+// pickRuleBuilder 根据策略名返回 TechanStrategy 的规则构建函数，与 strategyinterface/examples 对应
 func pickRuleBuilder(name string) strategyinterface.RuleBuilder {
 	switch name {
-	case "macd":
+	// 布林带
+	case "bollinger", "boll-breakout":
+		return func(series *techan.TimeSeries) techan.RuleStrategy {
+			return strategyinterface.BuildBollingerStrategy(series, 20, 2.0)
+		}
+	case "bollinger-mean-reversion", "boll-mean-reversion":
+		return func(series *techan.TimeSeries) techan.RuleStrategy {
+			return strategyinterface.BuildBollingerMeanReversionStrategy(series, 20, 2.0)
+		}
+	// MACD
+	case "macd", "macd-crossover":
 		return func(series *techan.TimeSeries) techan.RuleStrategy {
 			return strategyinterface.BuildMACDStrategy(series, 12, 26, 9)
 		}
-	case "rsi":
+	case "macd-histogram":
+		return func(series *techan.TimeSeries) techan.RuleStrategy {
+			return strategyinterface.BuildMACDHistogramStrategy(series, 12, 26, 9)
+		}
+	// RSI
+	case "rsi", "rsi-oversold-overbought":
 		return func(series *techan.TimeSeries) techan.RuleStrategy {
 			return strategyinterface.BuildRSIStrategy(series, 14, 30, 70)
+		}
+	case "rsi-divergence":
+		return func(series *techan.TimeSeries) techan.RuleStrategy {
+			return strategyinterface.BuildRSIDivergenceStrategy(series, 14)
+		}
+	// KDJ
+	case "kdj-crossover":
+		return func(series *techan.TimeSeries) techan.RuleStrategy {
+			return strategyinterface.BuildKDJCrossoverStrategy(series, 9, 3, 3)
+		}
+	case "kdj-extreme":
+		return func(series *techan.TimeSeries) techan.RuleStrategy {
+			return strategyinterface.BuildKDJOversoldOverboughtStrategy(series, 9, 3, 3)
+		}
+	// 组合
+	case "multi-indicator":
+		return func(series *techan.TimeSeries) techan.RuleStrategy {
+			return strategyinterface.BuildMultiIndicatorStrategy(series)
+		}
+	case "trend-following":
+		return func(series *techan.TimeSeries) techan.RuleStrategy {
+			return strategyinterface.BuildTrendFollowingStrategy(series)
 		}
 	default:
 		return func(series *techan.TimeSeries) techan.RuleStrategy {

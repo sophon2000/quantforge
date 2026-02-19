@@ -15,7 +15,7 @@ var backtestCmd = &cobra.Command{
 
 func init() {
 	backtestCmd.Flags().StringP("symbol", "s", "AAPL", "回测标的")
-	backtestCmd.Flags().StringP("strategy", "S", "bollinger", "策略: bollinger, macd, rsi")
+	backtestCmd.Flags().StringP("strategy", "S", "bollinger", "策略: bollinger, bollinger-mean-reversion, macd, macd-histogram, rsi, rsi-divergence, kdj-crossover, kdj-extreme, multi-indicator, trend-following")
 	backtestCmd.Flags().Float64P("cash", "c", 100000, "初始资金")
 	backtestCmd.Flags().IntP("quantity", "q", 100, "每笔信号下单数量")
 }

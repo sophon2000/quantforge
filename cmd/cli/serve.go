@@ -53,7 +53,7 @@ func handleBacktest(w http.ResponseWriter, r *http.Request) {
 	strategy := q.Get("strategy")
 	if strategy == "" {
 		strategy = "bollinger"
-	}~
+	}
 	cash := 100000.0
 	if s := q.Get("cash"); s != "" {
 		if f, err := strconv.ParseFloat(s, 64); err == nil {

@@ -27,6 +27,9 @@
     #signals-list .return-pct.positive { color: #00da3c; }
     #signals-list .return-pct.negative { color: #ec0000; }
     #signals-wrapper { max-height: 32vh; overflow-y: auto; }
+    #signals-list th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+    #signals-list th.sortable:hover { color: #e94560; }
+    #signals-list th .sort-indicator { margin-left: 4px; opacity: 0.6; font-size: 11px; }
   </style>
 </head>
 <body>
@@ -50,7 +53,13 @@
     <h3>信号列表</h3>
     <div id="signals-wrapper">
       <table id="signals-list">
-        <thead><tr><th>#</th><th>日期</th><th>类型</th><th>价格</th><th>收益率</th></tr></thead>
+        <thead><tr>
+          <th>#</th>
+          <th class="sortable" data-sort="date">日期 <span class="sort-indicator"></span></th>
+          <th>类型</th>
+          <th class="sortable" data-sort="price">价格 <span class="sort-indicator"></span></th>
+          <th class="sortable" data-sort="returnPct">收益率 <span class="sort-indicator"></span></th>
+        </tr></thead>
         <tbody id="signals-tbody"></tbody>
       </table>
     </div>
@@ -80,6 +89,16 @@
       const bollUpper = data.bollUpper || [];
       const bollMiddle = data.bollMiddle || [];
       const bollLower = data.bollLower || [];
+      const volumes = data.volumes || [];
+      const macdDIF = (data.macdDIF || []).map(v => (v === '-' || v == null) ? null : Number(v));
+      const macdDEA = (data.macdDEA || []).map(v => (v === '-' || v == null) ? null : Number(v));
+      const macdHist = (data.macdHist || []).map(v => (v === '-' || v == null) ? null : Number(v));
+      const macdHistBarData = macdHist.map(v => v == null ? null : { value: v, itemStyle: { color: v >= 0 ? upColor : downColor } });
+      // 成交量柱：涨红跌绿
+      const volumeBarData = values.map((v, i) => ({
+        value: volumes[i] || 0,
+        itemStyle: { color: (v[1] >= v[0]) ? upColor : downColor }
+      }));
 
       const buyPoints = signals.filter(s => s.type === 'BUY').map(s => ({
         name: '买',
@@ -108,28 +127,74 @@
           textStyle: { color: '#eee' }
         },
         legend: {
-          data: ['日K', 'MA5', 'MA10', 'MA20', 'MA30', 'BOLL上', 'BOLL中', 'BOLL下'],
+          data: ['日K', 'MA5', 'MA10', 'MA20', 'MA30', 'BOLL上', 'BOLL中', 'BOLL下', '成交量', 'DIF', 'DEA', 'MACD'],
           top: 28,
           textStyle: { color: '#a0a0a0' }
         },
-        grid: { left: '10%', right: '10%', bottom: '18%' },
-        xAxis: {
-          type: 'category',
-          data: categoryData,
-          boundaryGap: false,
-          axisLine: { onZero: false, lineStyle: { color: '#0f3460' } },
-          axisLabel: { color: '#a0a0a0' },
-          splitLine: { show: false }
-        },
-        yAxis: {
-          scale: true,
-          splitArea: { show: true, areaStyle: { color: ['rgba(15,52,96,0.3)', 'rgba(15,52,96,0.1)'] } },
-          splitLine: { lineStyle: { color: '#0f3460' } },
-          axisLabel: { color: '#a0a0a0' }
-        },
+        grid: [
+          { left: '10%', right: '10%', bottom: 230 },
+          { left: '10%', right: '10%', height: 80, bottom: 145 },
+          { left: '10%', right: '10%', height: 100, bottom: 40 }
+        ],
+        xAxis: [
+          {
+            type: 'category',
+            data: categoryData,
+            boundaryGap: false,
+            axisLine: { onZero: false, lineStyle: { color: '#0f3460' } },
+            axisLabel: { color: '#a0a0a0' },
+            splitLine: { show: false }
+          },
+          {
+            type: 'category',
+            data: categoryData,
+            gridIndex: 1,
+            boundaryGap: false,
+            axisLine: { onZero: false, lineStyle: { color: '#0f3460' } },
+            axisTick: { show: false },
+            axisLabel: { show: false },
+            splitLine: { show: false }
+          },
+          {
+            type: 'category',
+            data: categoryData,
+            gridIndex: 2,
+            boundaryGap: false,
+            axisLine: { onZero: false, lineStyle: { color: '#0f3460' } },
+            axisTick: { show: false },
+            axisLabel: { show: false },
+            splitLine: { show: false }
+          }
+        ],
+        yAxis: [
+          {
+            scale: true,
+            splitArea: { show: true, areaStyle: { color: ['rgba(15,52,96,0.3)', 'rgba(15,52,96,0.1)'] } },
+            splitLine: { lineStyle: { color: '#0f3460' } },
+            axisLabel: { color: '#a0a0a0' }
+          },
+          {
+            scale: true,
+            gridIndex: 1,
+            splitNumber: 2,
+            axisLabel: { show: false },
+            axisLine: { show: false },
+            axisTick: { show: false },
+            splitLine: { show: false }
+          },
+          {
+            scale: true,
+            gridIndex: 2,
+            splitNumber: 2,
+            axisLine: { show: false },
+            axisTick: { show: false },
+            splitLine: { lineStyle: { color: '#0f3460', type: 'dashed' } },
+            axisLabel: { color: '#a0a0a0', fontSize: 10 }
+          }
+        ],
         dataZoom: [
-          { type: 'inside', start: 50, end: 100 },
-          { show: true, type: 'slider', top: '92%', start: 50, end: 100, borderColor: '#0f3460', fillerColor: 'rgba(233,69,96,0.2)', handleStyle: { color: '#e94560' }, textStyle: { color: '#a0a0a0' } }
+          { type: 'inside', xAxisIndex: [0, 1, 2], start: 50, end: 100 },
+          { show: true, type: 'slider', xAxisIndex: [0, 1, 2], bottom: 5, start: 50, end: 100, borderColor: '#0f3460', fillerColor: 'rgba(233,69,96,0.2)', handleStyle: { color: '#e94560' }, textStyle: { color: '#a0a0a0' } }
         ],
         series: [
           {
@@ -155,7 +220,25 @@
           { name: 'MA30', type: 'line', data: ma30, smooth: true, lineStyle: { opacity: 0.6 }, itemStyle: { color: '#da70d6' } },
           { name: 'BOLL上', type: 'line', data: bollUpper, smooth: true, lineStyle: { opacity: 0.8, type: 'dashed' }, itemStyle: { color: '#ff6b9d' } },
           { name: 'BOLL中', type: 'line', data: bollMiddle, smooth: true, lineStyle: { opacity: 0.8 }, itemStyle: { color: '#c0c0c0' } },
-          { name: 'BOLL下', type: 'line', data: bollLower, smooth: true, lineStyle: { opacity: 0.8, type: 'dashed' }, itemStyle: { color: '#4ecdc4' } }
+          { name: 'BOLL下', type: 'line', data: bollLower, smooth: true, lineStyle: { opacity: 0.8, type: 'dashed' }, itemStyle: { color: '#4ecdc4' } },
+          {
+            name: '成交量',
+            type: 'bar',
+            xAxisIndex: 1,
+            yAxisIndex: 1,
+            data: volumeBarData,
+            large: true
+          },
+          { name: 'DIF', type: 'line', xAxisIndex: 2, yAxisIndex: 2, data: macdDIF, smooth: true, lineStyle: { width: 1.5 }, itemStyle: { color: '#7b68ee' } },
+          { name: 'DEA', type: 'line', xAxisIndex: 2, yAxisIndex: 2, data: macdDEA, smooth: true, lineStyle: { width: 1.5 }, itemStyle: { color: '#ffa500' } },
+          {
+            name: 'MACD',
+            type: 'bar',
+            xAxisIndex: 2,
+            yAxisIndex: 2,
+            data: macdHistBarData,
+            barMaxWidth: 6
+          }
         ]
       };
     }
@@ -175,11 +258,52 @@
       document.getElementById('error').textContent = msg || '';
     }
 
+    let currentSignals = [];
+    let sortKey = 'date';
+    let sortDir = 1; // 1 升序, -1 降序
+
+    function compareSignals(a, b) {
+      let va = a[sortKey], vb = b[sortKey];
+      if (sortKey === 'date') {
+        return sortDir * (String(va).localeCompare(String(vb)));
+      }
+      if (sortKey === 'price') {
+        return sortDir * (Number(va) - Number(vb));
+      }
+      if (sortKey === 'returnPct') {
+        // 只排 SELL（有 returnPct 的）；无收益率的（—）统一排在最后
+        const hasA = a.type === 'SELL' && (va != null && va !== '');
+        const hasB = b.type === 'SELL' && (vb != null && vb !== '');
+        if (!hasA && !hasB) return 0;
+        if (!hasA) return 1;   // a 无收益率，a 排后面
+        if (!hasB) return -1;  // b 无收益率，b 排后面
+        return sortDir * (Number(va) - Number(vb));
+      }
+      return 0;
+    }
+
+    function updateSortIndicators() {
+      document.querySelectorAll('#signals-list th.sortable').forEach(function(th) {
+        const ind = th.querySelector('.sort-indicator');
+        if (!ind) return;
+        if (th.dataset.sort === sortKey) {
+          ind.textContent = sortDir === 1 ? '↑' : '↓';
+          ind.style.opacity = '1';
+        } else {
+          ind.textContent = '';
+          ind.style.opacity = '0.6';
+        }
+      });
+    }
+
     function showSignalsList(signals) {
+      currentSignals = signals || [];
+      const sorted = currentSignals.slice().sort(compareSignals);
       const tbody = document.getElementById('signals-tbody');
       tbody.innerHTML = '';
-      if (!signals || signals.length === 0) return;
-      signals.forEach((s, i) => {
+      if (sorted.length === 0) return;
+      updateSortIndicators();
+      sorted.forEach((s, i) => {
         const tr = document.createElement('tr');
         const typeCls = s.type === 'BUY' ? 'type-buy' : 'type-sell';
         let returnHtml = '—';
@@ -191,6 +315,14 @@
         tbody.appendChild(tr);
       });
     }
+
+    document.getElementById('signals-list').addEventListener('click', function(e) {
+      const th = e.target.closest('th.sortable');
+      if (!th) return;
+      const key = th.dataset.sort;
+      if (key === sortKey) sortDir = -sortDir; else { sortKey = key; sortDir = 1; }
+      showSignalsList(currentSignals);
+    });
 
     async function runBacktest() {
       const symbol = document.getElementById('symbol').value.trim() || 'AAPL';

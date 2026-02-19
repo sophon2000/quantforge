@@ -27,9 +27,13 @@ type BacktestResult struct {
 	MA10         []interface{} `json:"ma10"`
 	MA20         []interface{} `json:"ma20"`
 	MA30         []interface{} `json:"ma30"`
-	BollUpper    []interface{} `json:"bollUpper"`    // 布林上轨
-	BollMiddle   []interface{} `json:"bollMiddle"`   // 布林中轨
-	BollLower    []interface{} `json:"bollLower"`    // 布林下轨
+	BollUpper    []interface{} `json:"bollUpper"`  // 布林上轨
+	BollMiddle   []interface{} `json:"bollMiddle"` // 布林中轨
+	BollLower    []interface{} `json:"bollLower"`  // 布林下轨
+	Volumes      []int64       `json:"volumes"`   // 成交量，与 categoryData 一一对应
+	MacdDIF      []interface{} `json:"macdDIF"`   // MACD DIF (12,26,9)
+	MacdDEA      []interface{} `json:"macdDEA"`   // MACD DEA
+	MacdHist     []interface{} `json:"macdHist"`  // MACD 柱 (DIF-DEA)*2
 	Summary      Summary       `json:"summary"`
 }
 
@@ -104,6 +108,7 @@ func RunBacktest(symbol, strategyName string, initialCash float64, quantity int)
 
 	categoryData := make([]string, 0, len(bars))
 	values := make([][4]float64, 0, len(bars))
+	volumes := make([]int64, 0, len(bars))
 
 	for i := range bars {
 		lastClose = bars[i].Close
@@ -118,6 +123,7 @@ func RunBacktest(symbol, strategyName string, initialCash float64, quantity int)
 			bars[i].Low,
 			bars[i].High,
 		})
+		volumes = append(volumes, bars[i].Volume)
 	}
 
 	equity := account.Equity()
@@ -132,6 +138,7 @@ func RunBacktest(symbol, strategyName string, initialCash float64, quantity int)
 	ma20 := calculateMA(values, 20)
 	ma30 := calculateMA(values, 30)
 	bollUpper, bollMiddle, bollLower := calculateBollinger(values, 20, 2.0)
+	macdDIF, macdDEA, macdHist := calculateMACD(values, 12, 26, 9)
 
 	return &BacktestResult{
 		Symbol:       symbol,
@@ -146,6 +153,10 @@ func RunBacktest(symbol, strategyName string, initialCash float64, quantity int)
 		BollUpper:    bollUpper,
 		BollMiddle:   bollMiddle,
 		BollLower:    bollLower,
+		Volumes:      volumes,
+		MacdDIF:      macdDIF,
+		MacdDEA:      macdDEA,
+		MacdHist:     macdHist,
 		Summary: Summary{
 			InitialCash: initialCash,
 			FinalCash:   equity,
@@ -198,6 +209,77 @@ func calculateBollinger(values [][4]float64, period int, stdDev float64) (upper,
 		middle[i] = mid
 		upper[i] = mid + stdDev*std
 		lower[i] = mid - stdDev*std
+	}
+	return
+}
+
+// calculateEMA 计算收盘价的 EMA，不足 period 为 "-"
+func calculateEMA(values [][4]float64, period int) []interface{} {
+	n := len(values)
+	result := make([]interface{}, n)
+	if n < period {
+		for i := 0; i < n; i++ {
+			result[i] = "-"
+		}
+		return result
+	}
+	alpha := 2.0 / float64(period+1)
+	// 第一个 EMA 用前 period 根 K 的收盘价均值
+	sum := 0.0
+	for j := 0; j < period; j++ {
+		sum += values[j][1]
+	}
+	ema := sum / float64(period)
+	for i := 0; i < period-1; i++ {
+		result[i] = "-"
+	}
+	result[period-1] = ema
+	for i := period; i < n; i++ {
+		ema = alpha*values[i][1] + (1-alpha)*ema
+		result[i] = ema
+	}
+	return result
+}
+
+// calculateMACD 计算 MACD(12,26,9)：DIF、DEA、柱 (DIF-DEA)*2，不足为 "-"
+func calculateMACD(values [][4]float64, fast, slow, signal int) (dif, dea, hist []interface{}) {
+	n := len(values)
+	dif = make([]interface{}, n)
+	dea = make([]interface{}, n)
+	hist = make([]interface{}, n)
+	for i := 0; i < n; i++ {
+		dif[i], dea[i], hist[i] = "-", "-", "-"
+	}
+	if n < slow {
+		return
+	}
+	emaFast := calculateEMA(values, fast)
+	emaSlow := calculateEMA(values, slow)
+	// DIF = EMA_fast - EMA_slow，从 index slow-1 开始有效
+	difSlice := make([]float64, n)
+	for i := slow - 1; i < n; i++ {
+		f, _ := emaFast[i].(float64)
+		s, _ := emaSlow[i].(float64)
+		difSlice[i] = f - s
+		dif[i] = f - s
+	}
+	// DEA = EMA(DIF, signal)，从 slow-1+signal-1 开始有效
+	alpha := 2.0 / float64(signal+1)
+	startDEA := slow - 1 + signal - 1
+	if startDEA >= n {
+		return
+	}
+	sum := 0.0
+	for j := slow - 1; j < slow-1+signal; j++ {
+		sum += difSlice[j]
+	}
+	emaDIF := sum / float64(signal)
+	dea[startDEA] = emaDIF
+	hist[startDEA] = (difSlice[startDEA] - emaDIF) * 2
+	for i := startDEA + 1; i < n; i++ {
+		emaDIF = alpha*difSlice[i] + (1-alpha)*emaDIF
+		dea[i] = emaDIF
+		hist[i] = (difSlice[i] - emaDIF) * 2
 	}
 	return
 }

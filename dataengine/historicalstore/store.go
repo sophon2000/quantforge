@@ -38,7 +38,7 @@ type CSVStore struct {
 // NewCSVStore 构造，defaultPath 为空时使用 datasource/csv/ 下默认文件
 func NewCSVStore(defaultPath string) *CSVStore {
 	if defaultPath == "" {
-		defaultPath = "datasource/csv/S&P 500 Stock Prices 2014-2017.csv"
+		defaultPath = "dataengine/historicalstore/S&P 500 Stock Prices 2014-2017.csv"
 	}
 	return &CSVStore{DefaultPath: defaultPath}
 }

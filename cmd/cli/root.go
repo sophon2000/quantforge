@@ -25,4 +25,5 @@ func init() {
 	rootCmd.AddCommand(backtestCmd)
 	rootCmd.AddCommand(liveCmd)
 	rootCmd.AddCommand(scanCmd)
+	rootCmd.AddCommand(serveCmd)
 }

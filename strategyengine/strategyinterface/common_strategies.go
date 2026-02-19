@@ -6,11 +6,13 @@ import (
 
 // BollingerBandStrategy 布林带突破策略
 func BollingerBandStrategy(closePrices techan.Indicator, upper, middle, lower techan.Indicator) techan.RuleStrategy {
+
 	entryRule := techan.And(
-		techan.NewCrossUpIndicatorRule(closePrices, lower),
+		techan.NewCrossUpIndicatorRule(middle, closePrices),
 		techan.PositionNewRule{})
 	exitRule := techan.And(
-		techan.NewCrossDownIndicatorRule(closePrices, upper),
+		techan.NewCrossUpIndicatorRule(closePrices, middle),
+		//techan.NewCrossDownIndicatorRule(closePrices, upper),
 		techan.PositionOpenRule{})
 	return techan.RuleStrategy{
 		UnstablePeriod: 20,

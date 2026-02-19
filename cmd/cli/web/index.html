@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QuantForge 回测可视化</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <style>
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #1a1a2e; color: #eee; }
+    #toolbar { padding: 12px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: #16213e; }
+    #toolbar label { display: flex; align-items: center; gap: 6px; }
+    #toolbar input, #toolbar select { padding: 6px 10px; border: 1px solid #0f3460; border-radius: 6px; background: #1a1a2e; color: #eee; }
+    #toolbar button { padding: 8px 16px; background: #e94560; border: none; border-radius: 6px; color: #fff; cursor: pointer; font-weight: 600; }
+    #toolbar button:hover { background: #ff6b6b; }
+    #summary { padding: 8px 16px; font-size: 13px; color: #a0a0a0; }
+    #main { width: 100%; height: 55vh; min-height: 360px; }
+    .error { color: #e94560; padding: 8px 16px; }
+    #signals-section { padding: 0 16px 16px; }
+    #signals-section h3 { margin: 12px 0 8px; font-size: 14px; color: #a0a0a0; font-weight: 600; }
+    #signals-list { width: 100%; border-collapse: collapse; font-size: 13px; background: #16213e; border-radius: 8px; overflow: hidden; }
+    #signals-list th, #signals-list td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #0f3460; }
+    #signals-list th { color: #a0a0a0; font-weight: 600; }
+    #signals-list tr:last-child td { border-bottom: none; }
+    #signals-list .type-buy { color: #00da3c; }
+    #signals-list .type-sell { color: #ec0000; }
+    #signals-list .return-pct { font-weight: 600; }
+    #signals-list .return-pct.positive { color: #00da3c; }
+    #signals-list .return-pct.negative { color: #ec0000; }
+    #signals-wrapper { max-height: 32vh; overflow-y: auto; }
+  </style>
+</head>
+<body>
+  <div id="toolbar">
+    <label>标的 <input type="text" id="symbol" value="AAPL" placeholder="AAPL"></label>
+    <label>策略
+      <select id="strategy">
+        <option value="bollinger">布林带</option>
+        <option value="macd">MACD</option>
+        <option value="rsi">RSI</option>
+      </select>
+    </label>
+    <label>初始资金 <input type="number" id="cash" value="100000" min="1000" step="10000"></label>
+    <label>每笔数量 <input type="number" id="quantity" value="100" min="1"></label>
+    <button id="run">运行回测</button>
+  </div>
+  <div id="summary"></div>
+  <div id="error" class="error"></div>
+  <div id="main"></div>
+  <div id="signals-section">
+    <h3>信号列表</h3>
+    <div id="signals-wrapper">
+      <table id="signals-list">
+        <thead><tr><th>#</th><th>日期</th><th>类型</th><th>价格</th><th>收益率</th></tr></thead>
+        <tbody id="signals-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const upColor = '#ec0000';
+    const upBorderColor = '#8A0000';
+    const downColor = '#00da3c';
+    const downBorderColor = '#008F28';
+
+    let chartDom = document.getElementById('main');
+    let myChart = echarts.init(chartDom);
+
+    function getApiBase() {
+      return window.location.origin;
+    }
+
+    function buildOption(data) {
+      const categoryData = data.categoryData || [];
+      const values = data.values || [];
+      const signals = data.signals || [];
+      const ma5 = data.ma5 || [];
+      const ma10 = data.ma10 || [];
+      const ma20 = data.ma20 || [];
+      const ma30 = data.ma30 || [];
+      const bollUpper = data.bollUpper || [];
+      const bollMiddle = data.bollMiddle || [];
+      const bollLower = data.bollLower || [];
+
+      const buyPoints = signals.filter(s => s.type === 'BUY').map(s => ({
+        name: '买',
+        coord: [s.date, s.price],
+        value: s.price.toFixed(2),
+        itemStyle: { color: downColor }
+      }));
+      const sellPoints = signals.filter(s => s.type === 'SELL').map(s => ({
+        name: '卖',
+        coord: [s.date, s.price],
+        value: s.price.toFixed(2),
+        itemStyle: { color: upColor }
+      }));
+
+      return {
+        title: {
+          text: data.symbol + ' - ' + (data.strategy === 'bollinger' ? '布林带' : data.strategy === 'macd' ? 'MACD' : 'RSI') + ' 回测',
+          left: 0,
+          textStyle: { color: '#eee' }
+        },
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'cross' },
+          backgroundColor: 'rgba(22,33,62,0.95)',
+          borderColor: '#0f3460',
+          textStyle: { color: '#eee' }
+        },
+        legend: {
+          data: ['日K', 'MA5', 'MA10', 'MA20', 'MA30', 'BOLL上', 'BOLL中', 'BOLL下'],
+          top: 28,
+          textStyle: { color: '#a0a0a0' }
+        },
+        grid: { left: '10%', right: '10%', bottom: '18%' },
+        xAxis: {
+          type: 'category',
+          data: categoryData,
+          boundaryGap: false,
+          axisLine: { onZero: false, lineStyle: { color: '#0f3460' } },
+          axisLabel: { color: '#a0a0a0' },
+          splitLine: { show: false }
+        },
+        yAxis: {
+          scale: true,
+          splitArea: { show: true, areaStyle: { color: ['rgba(15,52,96,0.3)', 'rgba(15,52,96,0.1)'] } },
+          splitLine: { lineStyle: { color: '#0f3460' } },
+          axisLabel: { color: '#a0a0a0' }
+        },
+        dataZoom: [
+          { type: 'inside', start: 50, end: 100 },
+          { show: true, type: 'slider', top: '92%', start: 50, end: 100, borderColor: '#0f3460', fillerColor: 'rgba(233,69,96,0.2)', handleStyle: { color: '#e94560' }, textStyle: { color: '#a0a0a0' } }
+        ],
+        series: [
+          {
+            name: '日K',
+            type: 'candlestick',
+            data: values,
+            itemStyle: {
+              color: upColor,
+              color0: downColor,
+              borderColor: upBorderColor,
+              borderColor0: downBorderColor
+            },
+            markPoint: {
+              symbol: 'pin',
+              symbolSize: 40,
+              label: { fontSize: 11 },
+              data: [...buyPoints, ...sellPoints]
+            }
+          },
+          { name: 'MA5', type: 'line', data: ma5, smooth: true, lineStyle: { opacity: 0.6 }, itemStyle: { color: '#7b68ee' } },
+          { name: 'MA10', type: 'line', data: ma10, smooth: true, lineStyle: { opacity: 0.6 }, itemStyle: { color: '#20b2aa' } },
+          { name: 'MA20', type: 'line', data: ma20, smooth: true, lineStyle: { opacity: 0.6 }, itemStyle: { color: '#ffa500' } },
+          { name: 'MA30', type: 'line', data: ma30, smooth: true, lineStyle: { opacity: 0.6 }, itemStyle: { color: '#da70d6' } },
+          { name: 'BOLL上', type: 'line', data: bollUpper, smooth: true, lineStyle: { opacity: 0.8, type: 'dashed' }, itemStyle: { color: '#ff6b9d' } },
+          { name: 'BOLL中', type: 'line', data: bollMiddle, smooth: true, lineStyle: { opacity: 0.8 }, itemStyle: { color: '#c0c0c0' } },
+          { name: 'BOLL下', type: 'line', data: bollLower, smooth: true, lineStyle: { opacity: 0.8, type: 'dashed' }, itemStyle: { color: '#4ecdc4' } }
+        ]
+      };
+    }
+
+    function showSummary(summary) {
+      const el = document.getElementById('summary');
+      if (!summary) { el.textContent = ''; return; }
+      el.innerHTML = 'K线数: ' + (summary.barCount || '-') +
+        ' | 信号笔数: ' + (summary.tradeCount ?? '-') +
+        ' | 初始资金: ' + (summary.initialCash != null ? summary.initialCash.toFixed(2) : '-') +
+        ' | 期末现金: ' + (summary.finalCash != null ? summary.finalCash.toFixed(2) : '-') +
+        ' | 收益率: ' + (summary.returnPct != null ? summary.returnPct.toFixed(2) + '%' : '-') +
+        ' | 持仓: ' + (summary.position ?? '-');
+    }
+
+    function setError(msg) {
+      document.getElementById('error').textContent = msg || '';
+    }
+
+    function showSignalsList(signals) {
+      const tbody = document.getElementById('signals-tbody');
+      tbody.innerHTML = '';
+      if (!signals || signals.length === 0) return;
+      signals.forEach((s, i) => {
+        const tr = document.createElement('tr');
+        const typeCls = s.type === 'BUY' ? 'type-buy' : 'type-sell';
+        let returnHtml = '—';
+        if (s.type === 'SELL' && s.returnPct != null) {
+          const cls = s.returnPct >= 0 ? 'return-pct positive' : 'return-pct negative';
+          returnHtml = '<span class="' + cls + '">' + s.returnPct.toFixed(2) + '%</span>';
+        }
+        tr.innerHTML = '<td>' + (i + 1) + '</td><td>' + s.date + '</td><td class="' + typeCls + '">' + s.type + '</td><td>' + s.price.toFixed(2) + '</td><td>' + returnHtml + '</td>';
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function runBacktest() {
+      const symbol = document.getElementById('symbol').value.trim() || 'AAPL';
+      const strategy = document.getElementById('strategy').value;
+      const cash = Number(document.getElementById('cash').value) || 100000;
+      const quantity = Number(document.getElementById('quantity').value) || 100;
+      setError('');
+
+      const url = getApiBase() + '/api/backtest?symbol=' + encodeURIComponent(symbol) + '&strategy=' + encodeURIComponent(strategy) + '&cash=' + cash + '&quantity=' + quantity;
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.error) {
+          setError(data.error);
+          return;
+        }
+        const option = buildOption(data);
+        myChart.setOption(option, true);
+        const s = data.summary || {};
+        showSummary({
+          barCount: data.categoryData ? data.categoryData.length : 0,
+          tradeCount: s.tradeCount,
+          initialCash: s.initialCash,
+          finalCash: s.finalCash,
+          returnPct: s.returnPct,
+          position: s.position
+        });
+        showSignalsList(data.signals || []);
+      } catch (e) {
+        setError('请求失败: ' + e.message);
+      }
+    }
+
+    document.getElementById('run').addEventListener('click', runBacktest);
+    window.addEventListener('resize', function() { myChart.resize(); });
+
+    // 默认加载一次
+    runBacktest();
+  </script>
+</body>
+</html>

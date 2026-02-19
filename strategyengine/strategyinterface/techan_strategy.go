@@ -64,6 +64,8 @@ func (s *TechanStrategy) OnBar(b *dataengine.Bar) {
 	index := s.barIndex
 	s.barIndex++
 
+	// 同一根 K 线只执行其一：若本 bar 已入场则本 bar 不再出场，避免同价买卖
+	entered := false
 	if s.rule.ShouldEnter(index, s.record) {
 		if s.onSignal != nil {
 			s.onSignal(strategyengine.Signal{Symbol: s.symbol, Signal: "BUY"})
@@ -75,8 +77,9 @@ func (s *TechanStrategy) OnBar(b *dataengine.Bar) {
 			Price:         big.NewFromString(fmt.Sprintf("%.4f", b.Close)),
 			ExecutionTime: b.Time,
 		})
+		entered = true
 	}
-	if s.rule.ShouldExit(index, s.record) {
+	if !entered && s.rule.ShouldExit(index, s.record) {
 		if s.onSignal != nil {
 			s.onSignal(strategyengine.Signal{Symbol: s.symbol, Signal: "SELL"})
 		}

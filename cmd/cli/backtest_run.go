@@ -53,6 +53,7 @@ type Summary struct {
 	TradeCount  int     `json:"tradeCount"`
 	Position    int     `json:"position"`
 	ReturnPct   float64 `json:"returnPct"`
+	SuccessPct  float64 `json:"successPct"`
 }
 
 // RunBacktest 执行回测并返回结构化结果（供 CLI 打印与 HTTP API 使用）
@@ -81,6 +82,7 @@ func RunBacktest(symbol, strategyName string, initialCash float64, quantity int)
 	var currentDate string
 	var lastBuyPrice float64
 	var signals []SignalPoint
+	var successNum int
 
 	onSignal := func(s strategyengine.Signal) {
 		price := lastClose
@@ -99,6 +101,9 @@ func RunBacktest(symbol, strategyName string, initialCash float64, quantity int)
 			lastBuyPrice = price
 		} else if s.Signal == "SELL" && lastBuyPrice > 0 {
 			pt.FillReturnPct = (price - lastBuyPrice) / lastBuyPrice * 100
+			if pt.FillReturnPct > 0 {
+				successNum++
+			}
 		}
 		signals = append(signals, pt)
 	}
@@ -164,6 +169,7 @@ func RunBacktest(symbol, strategyName string, initialCash float64, quantity int)
 			TradeCount:  len(signals),
 			Position:    pos,
 			ReturnPct:   returnPct,
+			SuccessPct:  float64(successNum) / float64(len(signals)/2) * 100,
 		},
 	}, nil
 }

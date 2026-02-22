@@ -60,7 +60,7 @@ func handleBacktest(w http.ResponseWriter, r *http.Request) {
 			cash = f
 		}
 	}
-	quantity := 100
+	quantity := 0 // 0 表示按现金满仓买、按持仓全卖
 	if s := q.Get("quantity"); s != "" {
 		if n, err := strconv.Atoi(s); err == nil {
 			quantity = n

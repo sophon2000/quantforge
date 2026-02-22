@@ -43,6 +43,7 @@ type SignalPoint struct {
 	Date          string  `json:"date"`
 	Type          string  `json:"type"` // BUY / SELL
 	Price         float64 `json:"price"`
+	Quantity      int     `json:"quantity"`            // 该笔成交数量
 	FillReturnPct float64 `json:"returnPct,omitempty"` // 仅 SELL 有值：(卖价-买价)/买价*100
 }
 
@@ -82,28 +83,40 @@ func RunBacktest(symbol, strategyName string, initialCash float64, quantity int)
 	var currentDate string
 	var lastBuyPrice float64
 	var signals []SignalPoint
-	var successNum int
 
 	onSignal := func(s strategyengine.Signal) {
 		price := lastClose
 		if price <= 0 {
 			return
 		}
+		var fillQty int
+		if quantity > 0 {
+			fillQty = quantity
+		} else {
+			// quantity==0：买入按现金允许的最大数量，卖出按该 symbol 当前持仓全部
+			if s.Signal == "BUY" {
+				cash := account.Equity()
+				fillQty = int(cash / price)
+				fmt.Println("fillQty", fillQty, "cash", cash, "price", price)
+			} else {
+				fillQty = account.Position(s.Symbol)
+			}
+		}
+		if fillQty <= 0 {
+			return
+		}
 		fill := backtestengine.Fill{
 			Symbol:   s.Symbol,
 			Price:    price,
-			Quantity: quantity,
+			Quantity: fillQty,
 			Side:     s.Signal,
 		}
 		account.ApplyFill(fill)
-		pt := SignalPoint{Index: currentIndex, Date: currentDate, Type: s.Signal, Price: price}
+		pt := SignalPoint{Index: currentIndex, Date: currentDate, Type: s.Signal, Price: price, Quantity: fillQty}
 		if s.Signal == "BUY" {
 			lastBuyPrice = price
 		} else if s.Signal == "SELL" && lastBuyPrice > 0 {
 			pt.FillReturnPct = (price - lastBuyPrice) / lastBuyPrice * 100
-			if pt.FillReturnPct > 0 {
-				successNum++
-			}
 		}
 		signals = append(signals, pt)
 	}
@@ -169,7 +182,7 @@ func RunBacktest(symbol, strategyName string, initialCash float64, quantity int)
 			TradeCount:  len(signals),
 			Position:    pos,
 			ReturnPct:   returnPct,
-			SuccessPct:  float64(successNum) / float64(len(signals)/2) * 100,
+			SuccessPct:  account.SuccessPct,
 		},
 	}, nil
 }

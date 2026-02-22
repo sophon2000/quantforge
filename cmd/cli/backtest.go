@@ -35,7 +35,7 @@ func runBacktest(cmd *cobra.Command, _ []string) error {
 	fmt.Printf("回测: %s | 策略=%s | 初始资金=%.2f | 每笔=%d\n", res.Symbol, res.Strategy, s.InitialCash, quantity)
 	fmt.Println("----------------------------------------")
 	for _, sig := range res.Signals {
-		fmt.Printf("  [信号] %s %s @ %.2f x %d\n", res.Symbol, sig.Type, sig.Price, quantity)
+		fmt.Printf("  [信号] %s %s @ %.2f x %d\n", res.Symbol, sig.Type, sig.Price, sig.Quantity)
 	}
 	fmt.Println("----------------------------------------")
 	fmt.Printf("K 线数: %d | 信号/成交笔数: %d\n", len(res.CategoryData), s.TradeCount)

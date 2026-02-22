@@ -16,7 +16,7 @@ type Order struct {
 type Fill struct {
 	Symbol   string
 	Price    float64
-	Quantity int  // 正数
+	Quantity int    // 正数
 	Side     string // "BUY" / "SELL"
 }
 

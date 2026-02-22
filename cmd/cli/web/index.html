@@ -65,6 +65,7 @@
           <th class="sortable" data-sort="date">日期 <span class="sort-indicator"></span></th>
           <th>类型</th>
           <th class="sortable" data-sort="price">价格 <span class="sort-indicator"></span></th>
+          <th>数量</th>
           <th class="sortable" data-sort="returnPct">收益率 <span class="sort-indicator"></span></th>
         </tr></thead>
         <tbody id="signals-tbody"></tbody>
@@ -342,7 +343,8 @@
           const cls = s.returnPct >= 0 ? 'return-pct positive' : 'return-pct negative';
           returnHtml = '<span class="' + cls + '">' + s.returnPct.toFixed(2) + '%</span>';
         }
-        tr.innerHTML = '<td>' + (i + 1) + '</td><td>' + dateStr + '</td><td class="' + typeCls + '">' + (s && s.type ? s.type : '—') + '</td><td>' + priceStr + '</td><td>' + returnHtml + '</td>';
+        const qtyStr = (s && (s.quantity != null || s.Quantity != null)) ? String(s.quantity != null ? s.quantity : s.Quantity) : '—';
+        tr.innerHTML = '<td>' + (i + 1) + '</td><td>' + dateStr + '</td><td class="' + typeCls + '">' + (s && s.type ? s.type : '—') + '</td><td>' + priceStr + '</td><td>' + qtyStr + '</td><td>' + returnHtml + '</td>';
         tbody.appendChild(tr);
       });
     }
@@ -359,7 +361,7 @@
       const symbol = document.getElementById('symbol').value.trim() || 'AAPL';
       const strategy = document.getElementById('strategy').value;
       const cash = Number(document.getElementById('cash').value) || 100000;
-      const quantity = Number(document.getElementById('quantity').value) || 100;
+      const quantity = Number(document.getElementById('quantity').value) || 0;
       setError('');
 
       const url = getApiBase() + '/api/backtest?symbol=' + encodeURIComponent(symbol) + '&strategy=' + encodeURIComponent(strategy) + '&cash=' + cash + '&quantity=' + quantity;

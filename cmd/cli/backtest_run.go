@@ -95,9 +95,8 @@ func RunBacktest(symbol, strategyName string, initialCash float64, quantity int)
 		} else {
 			// quantity==0：买入按现金允许的最大数量，卖出按该 symbol 当前持仓全部
 			if s.Signal == "BUY" {
-				cash := account.Equity()
+				cash := account.Cash()
 				fillQty = int(cash / price)
-				fmt.Println("fillQty", fillQty, "cash", cash, "price", price)
 			} else {
 				fillQty = account.Position(s.Symbol)
 			}
@@ -133,6 +132,7 @@ func RunBacktest(symbol, strategyName string, initialCash float64, quantity int)
 		lastClose = bars[i].Close
 		currentIndex = i
 		currentDate = bars[i].Time.Format("2006/1/2")
+		account.UpdatePrice(symbol, lastClose)
 		strat.OnBar(bars[i])
 
 		categoryData = append(categoryData, currentDate)
@@ -147,10 +147,7 @@ func RunBacktest(symbol, strategyName string, initialCash float64, quantity int)
 
 	equity := account.Equity()
 	pos := account.Position(symbol)
-	returnPct := 0.0
-	if initialCash != 0 {
-		returnPct = (equity - initialCash) / initialCash * 100
-	}
+	returnPct := account.ReturnPct()
 
 	ma5 := calculateMA(values, 5)
 	ma10 := calculateMA(values, 10)

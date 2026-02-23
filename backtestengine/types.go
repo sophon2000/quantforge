@@ -3,6 +3,7 @@ package backtestengine
 import (
 	"quantforge/dataengine"
 	"quantforge/strategyengine"
+	"time"
 )
 
 // Order 回测订单（简化）
@@ -12,12 +13,20 @@ type Order struct {
 	Quantity int // 正买负卖
 }
 
+type Side string
+
+const (
+	BUY  Side = "BUY"
+	SELL Side = "SELL"
+)
+
 // Fill 回测成交
 type Fill struct {
 	Symbol   string
 	Price    float64
-	Quantity int    // 正数
-	Side     string // "BUY" / "SELL"
+	Quantity int       // 正数
+	Side     Side      // "BUY" / "SELL"
+	Time     time.Time // 成交时间
 }
 
 // MatchingEngine 撮合引擎接口

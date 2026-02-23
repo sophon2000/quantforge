@@ -2,6 +2,7 @@ package accountsimulator
 
 import (
 	"sync"
+	"time"
 
 	"quantforge/backtestengine"
 )
@@ -25,6 +26,9 @@ type DefaultAccountSimulator struct {
 	mu            sync.Mutex
 	cash          float64
 	initialCash   float64
+	fees          float64
+	monthlyVol    int
+	lastTradeTime time.Time
 	positions     map[string]int     // symbol -> quantity
 	avgCost       map[string]float64 // symbol -> 成本
 	lastPrice     map[string]float64 // symbol -> 最新价（用于 Equity 持仓市值）
@@ -48,14 +52,30 @@ func NewDefaultAccountSimulator(initialCash float64) *DefaultAccountSimulator {
 	}
 }
 
-// ApplyFill 实现 AccountSimulator
+// ApplyFill 实现 AccountSimulator（含手续费、规费扣减）
 func (s *DefaultAccountSimulator) ApplyFill(f backtestengine.Fill) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	qty := f.Quantity
 	cost := f.Price * float64(qty)
-	if f.Side == "BUY" {
-		s.cash -= cost
+
+	// 阶梯费率：跨月重置当月累计成交量
+	if !s.lastTradeTime.IsZero() &&
+		(f.Time.Year() != s.lastTradeTime.Year() || f.Time.Month() != s.lastTradeTime.Month()) {
+		s.monthlyVol = 0
+	}
+	trade := Trade{
+		Shares:     qty,
+		Price:      f.Price,
+		IsSell:     f.Side == backtestengine.SELL,
+		MonthlyVol: s.monthlyVol, // 本笔成交前的当月累计股数
+	}
+	fee := CalcCommission(trade, Tiered)
+	s.monthlyVol += qty
+	s.lastTradeTime = f.Time
+	s.fees += fee
+	if f.Side == backtestengine.BUY {
+		s.cash -= cost + fee
 		s.positions[f.Symbol] += qty
 		oldQty := s.positions[f.Symbol] - qty
 		var oldCost float64
@@ -66,7 +86,7 @@ func (s *DefaultAccountSimulator) ApplyFill(f backtestengine.Fill) {
 		s.cycleCost[f.Symbol] += cost
 	} else {
 		proceeds := f.Price * float64(qty)
-		s.cash += proceeds
+		s.cash += proceeds - fee
 		s.cycleProceeds[f.Symbol] += proceeds
 		s.positions[f.Symbol] -= qty
 		if s.positions[f.Symbol] <= 0 {
@@ -83,7 +103,6 @@ func (s *DefaultAccountSimulator) ApplyFill(f backtestengine.Fill) {
 			delete(s.cycleProceeds, f.Symbol)
 		}
 	}
-
 }
 
 // Cash 实现 AccountSimulator
@@ -116,6 +135,12 @@ func (s *DefaultAccountSimulator) ReturnPct() float64 {
 		return (s.Equity() - s.initialCash) / s.initialCash * 100
 	}
 	return 0
+}
+
+func (s *DefaultAccountSimulator) Fees() float64 {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.fees
 }
 
 // Position 实现 AccountSimulator

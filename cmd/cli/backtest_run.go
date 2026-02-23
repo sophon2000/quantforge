@@ -55,6 +55,7 @@ type Summary struct {
 	Position    int     `json:"position"`
 	ReturnPct   float64 `json:"returnPct"`
 	SuccessPct  float64 `json:"successPct"`
+	Fees        float64 `json:"fees"`
 }
 
 // RunBacktest 执行回测并返回结构化结果（供 CLI 打印与 HTTP API 使用）
@@ -108,7 +109,8 @@ func RunBacktest(symbol, strategyName string, initialCash float64, quantity int)
 			Symbol:   s.Symbol,
 			Price:    price,
 			Quantity: fillQty,
-			Side:     s.Signal,
+			Side:     backtestengine.Side(s.Signal),
+			Time:     bars[currentIndex].Time,
 		}
 		account.ApplyFill(fill)
 		pt := SignalPoint{Index: currentIndex, Date: currentDate, Type: s.Signal, Price: price, Quantity: fillQty}
@@ -180,6 +182,7 @@ func RunBacktest(symbol, strategyName string, initialCash float64, quantity int)
 			Position:    pos,
 			ReturnPct:   returnPct,
 			SuccessPct:  account.SuccessPct,
+			Fees:        account.Fees(),
 		},
 	}, nil
 }

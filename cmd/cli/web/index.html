@@ -276,7 +276,8 @@
         ' | 期末现金: ' + (summary.finalCash != null ? summary.finalCash.toFixed(2) : '-') +
         ' | 收益率: ' + (summary.returnPct != null ? summary.returnPct.toFixed(2) + '%' : '-') +
         ' | 成功率: ' + (summary.successPct != null ? summary.successPct.toFixed(2) + '%' : '-') +
-        ' | 持仓: ' + (summary.position ?? '-');
+        ' | 持仓: ' + (summary.position ?? '-') +
+        ' | 手续费: ' + (summary.fees != null ? summary.fees.toFixed(2) : '-');
     }
 
     function setError(msg) {
@@ -382,7 +383,8 @@
           finalCash: s.finalCash,
           returnPct: s.returnPct,
           position: s.position,
-          successPct: s.successPct
+          successPct: s.successPct,
+		  fees: s.fees,
         });
         // 与 markPoint 使用同一份数据，保证列表条数一致
         showSignalsList(option._signalsForList != null ? option._signalsForList : (data.signals || []));

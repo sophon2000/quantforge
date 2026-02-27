@@ -49,10 +49,10 @@ func (e *DefaultMatchingEngine) Match(tick *dataengine.Tick) {
 		}
 		if filled {
 			qty := o.Quantity
-			side := "BUY"
+			side := backtestengine.BUY
 			if qty < 0 {
 				qty = -qty
-				side = "SELL"
+				side = backtestengine.SELL
 			}
 			f := backtestengine.Fill{Symbol: o.Symbol, Price: tick.Price, Quantity: qty, Side: side}
 			if e.onFill != nil {

@@ -1,24 +1,46 @@
-package accountsimulator
+package ibkr
 
+import (
+	"quantforge/broker"
+)
+
+// PricingMode IBKR 定价模式：阶梯 vs 固定
 type PricingMode int
 
-type CommissionModel interface {
-	Calculate(t Trade) float64
-}
-
 const (
+	// Tiered 阶梯费率（按当月成交量分档）
 	Tiered PricingMode = iota
+	// Fixed 固定费率
 	Fixed
 )
 
-type Trade struct {
-	Shares     int
-	Price      float64
-	IsSell     bool
-	MonthlyVol int // 当月累计成交股数（仅 Tiered 用）
+// Commission 实现 broker.CommissionModel，封装 IBKR 佣金与规费计算
+type Commission struct {
+	Mode PricingMode
 }
 
-func CalcFixedCommission(t Trade) float64 {
+// NewCommission 创建 IBKR 费率模型
+func NewCommission(mode PricingMode) *Commission {
+	return &Commission{Mode: mode}
+}
+
+// 编译期断言：*Commission 实现 broker.CommissionModel
+var _ broker.CommissionModel = (*Commission)(nil)
+
+// Calculate 实现 broker.CommissionModel
+func (c *Commission) Calculate(t broker.Trade) float64 {
+	var commission float64
+	switch c.Mode {
+	case Fixed:
+		commission = c.calcFixed(t)
+	case Tiered:
+		commission = c.calcTiered(t)
+	}
+	commission += c.calcRegulatoryFee(t)
+	return commission
+}
+
+func (c *Commission) calcFixed(t broker.Trade) float64 {
 	const perShare = 0.005
 	const minFee = 1.00
 
@@ -52,7 +74,7 @@ func getTieredRate(monthlyVol int) float64 {
 	}
 }
 
-func CalcTieredCommission(t Trade) float64 {
+func (c *Commission) calcTiered(t broker.Trade) float64 {
 	const minFee = 0.35
 
 	rate := getTieredRate(t.MonthlyVol)
@@ -72,35 +94,19 @@ func CalcTieredCommission(t Trade) float64 {
 	return commission
 }
 
-func CalcRegulatoryFee(t Trade) float64 {
+// calcRegulatoryFee 规费：SEC + FINRA TAF（仅卖出收取，比例示例，实际以官方为准）
+func (c *Commission) calcRegulatoryFee(t broker.Trade) float64 {
 	var fee float64
 
 	if t.IsSell {
 		tradeValue := float64(t.Shares) * t.Price
 
-		// SEC fee（示例比例，真实需按最新官方）
 		secRate := 0.000008 // 0.0008%
 		fee += tradeValue * secRate
 
-		// FINRA TAF
 		finraRate := 0.000145
 		fee += float64(t.Shares) * finraRate
 	}
 
 	return fee
-}
-
-func CalcCommission(t Trade, mode PricingMode) float64 {
-	var commission float64
-
-	switch mode {
-	case Fixed:
-		commission = CalcFixedCommission(t)
-	case Tiered:
-		commission = CalcTieredCommission(t)
-	}
-
-	commission += CalcRegulatoryFee(t)
-
-	return commission
 }

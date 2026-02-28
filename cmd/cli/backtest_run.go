@@ -7,7 +7,8 @@ import (
 	"time"
 
 	"quantforge/backtestengine"
-	"quantforge/backtestengine/accountsimulator"
+	"quantforge/broker/ibkr"
+	"quantforge/broker/simulator"
 	"quantforge/dataengine"
 	"quantforge/dataengine/historicalstore"
 	"quantforge/strategyengine"
@@ -78,7 +79,7 @@ func RunBacktest(symbol, strategyName string, initialCash float64, quantity int)
 		return nil, fmt.Errorf("标的 %s 无有效 K 线", symbol)
 	}
 
-	account := accountsimulator.NewDefaultAccountSimulator(initialCash)
+	account := simulator.New(initialCash, ibkr.NewCommission(ibkr.Tiered))
 	var lastClose float64
 	var currentIndex int
 	var currentDate string

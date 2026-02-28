@@ -46,6 +46,7 @@ var _ broker.Account = (*DefaultSimulator)(nil)
 
 // ApplyFill 实现 broker.Account
 func (s *DefaultSimulator) ApplyFill(f backtestengine.Fill) {
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	qty := f.Quantity

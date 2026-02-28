@@ -13,36 +13,30 @@ import (
 	"github.com/sdcoffey/techan"
 )
 
-// TechanStrategy 基于 techan.RuleStrategy 实现 Strategy：用 K 线驱动规则，触发时通过 OnSignal 发出信号
+// TechanStrategy 基于 techan.RuleStrategy 实现 Strategy：用 K 线驱动规则，触发时通过 signalEngine 发出信号
 type TechanStrategy struct {
-	mu       sync.Mutex
-	symbol   string
-	series   *techan.TimeSeries
-	rule     techan.RuleStrategy
-	record   *techan.TradingRecord
-	barIndex int
-	onSignal func(strategyengine.Signal)
+	mu           sync.Mutex
+	symbol       string
+	series       *techan.TimeSeries
+	rule         techan.RuleStrategy
+	record       *techan.TradingRecord
+	barIndex     int
+	signalEngine strategyengine.SignalEngine
 }
 
 // RuleBuilder 根据 TimeSeries 构建规则（与策略共用同一 series，Bar 会追加到该 series）
 type RuleBuilder func(series *techan.TimeSeries) techan.RuleStrategy
 
-// NewTechanStrategy 构造。ruleBuilder 根据内部 series 构建规则，例如：
-//
-//	NewTechanStrategy("AAPL", func(series *techan.TimeSeries) techan.RuleStrategy {
-//	    return BuildBollingerStrategy(series, 20, 2.0)
-//	}, onSignal)
-//
-// onSignal 在触发买卖时调用。
-func NewTechanStrategy(symbol string, ruleBuilder RuleBuilder, onSignal func(strategyengine.Signal)) *TechanStrategy {
+// NewTechanStrategy 构造。ruleBuilder 根据内部 series 构建规则，signalEngine 在触发买卖时接收信号（例如 signalgenerator.NewDefaultSignalEngine(onSignal)）。
+func NewTechanStrategy(symbol string, ruleBuilder RuleBuilder, signalEngine strategyengine.SignalEngine) *TechanStrategy {
 	series := techan.NewTimeSeries()
 	rule := ruleBuilder(series)
 	return &TechanStrategy{
-		symbol:   symbol,
-		series:   series,
-		rule:     rule,
-		record:   techan.NewTradingRecord(),
-		onSignal: onSignal,
+		symbol:       symbol,
+		series:       series,
+		rule:         rule,
+		record:       techan.NewTradingRecord(),
+		signalEngine: signalEngine,
 	}
 }
 
@@ -67,8 +61,8 @@ func (s *TechanStrategy) OnBar(b *dataengine.Bar) {
 	// 同一根 K 线只执行其一：若本 bar 已入场则本 bar 不再出场，避免同价买卖
 	entered := false
 	if s.rule.ShouldEnter(index, s.record) {
-		if s.onSignal != nil {
-			s.onSignal(strategyengine.Signal{Symbol: s.symbol, Signal: "BUY"})
+		if s.signalEngine != nil {
+			s.signalEngine.OnSignal(strategyengine.Signal{Symbol: s.symbol, Signal: "BUY"})
 		}
 		s.record.Operate(techan.Order{
 			Side:          techan.BUY,
@@ -80,8 +74,8 @@ func (s *TechanStrategy) OnBar(b *dataengine.Bar) {
 		entered = true
 	}
 	if !entered && s.rule.ShouldExit(index, s.record) {
-		if s.onSignal != nil {
-			s.onSignal(strategyengine.Signal{Symbol: s.symbol, Signal: "SELL"})
+		if s.signalEngine != nil {
+			s.signalEngine.OnSignal(strategyengine.Signal{Symbol: s.symbol, Signal: "SELL"})
 		}
 		s.record.Operate(techan.Order{
 			Side:          techan.SELL,

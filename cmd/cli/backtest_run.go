@@ -12,6 +12,7 @@ import (
 	"quantforge/dataengine"
 	"quantforge/dataengine/historicalstore"
 	"quantforge/strategyengine"
+	"quantforge/strategyengine/signalgenerator"
 	"quantforge/strategyengine/strategyinterface"
 
 	"github.com/sdcoffey/techan"
@@ -125,7 +126,9 @@ func RunBacktest(symbol, strategyName string, initialCash float64, quantity int)
 
 	ruleBuilder := pickRuleBuilder(strategyName)
 
-	strat := strategyinterface.NewTechanStrategy(symbol, ruleBuilder, onSignal)
+	signalEngine := signalgenerator.NewDefaultSignalEngine(onSignal)
+
+	strat := strategyinterface.NewTechanStrategy(symbol, ruleBuilder, signalEngine)
 
 	categoryData := make([]string, 0, len(bars))
 	values := make([][4]float64, 0, len(bars))

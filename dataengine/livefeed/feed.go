@@ -1,6 +1,6 @@
 package livefeed
 
-import "quantforge/dataengine"
+import "github.com/sophon2000/quantforge/dataengine"
 
 // LiveFeed 实时行情推送：订阅标的并回调 Tick
 type LiveFeed interface {

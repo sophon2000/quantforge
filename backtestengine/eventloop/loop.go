@@ -3,9 +3,9 @@ package eventloop
 import (
 	"sync"
 
-	"quantforge/backtestengine"
-	"quantforge/dataengine"
-	"quantforge/strategyengine"
+	"github.com/sophon2000/quantforge/backtestengine"
+	"github.com/sophon2000/quantforge/dataengine"
+	"github.com/sophon2000/quantforge/strategyengine"
 )
 
 // DefaultEventLoop 默认事件循环：队列 + 单协程处理

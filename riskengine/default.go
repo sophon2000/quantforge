@@ -1,6 +1,6 @@
 package riskengine
 
-import "quantforge/executionengine"
+import "github.com/sophon2000/quantforge/executionengine"
 
 // DefaultRiskManager 默认风控：全部通过
 type DefaultRiskManager struct{}

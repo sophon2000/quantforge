@@ -1,14 +1,22 @@
-package simulator
+package broker
 
 import (
 	"sync"
 	"time"
 
 	"github.com/sophon2000/quantforge/backtestengine"
-	"github.com/sophon2000/quantforge/broker"
 )
 
-// DefaultSimulator 默认回测账户实现
+// Simulator 回测账户模拟：资金与持仓
+type Simulator interface {
+	ApplyFill(f backtestengine.Fill)
+	Cash() float64
+	Equity() float64
+	Position(symbol string) int
+	UpdatePrice(symbol string, price float64)
+}
+
+// DefaultSimulator 默认实现
 type DefaultSimulator struct {
 	mu            sync.Mutex
 	cash          float64
@@ -16,7 +24,7 @@ type DefaultSimulator struct {
 	fees          float64
 	monthlyVol    int
 	lastTradeTime time.Time
-	commission    broker.CommissionModel
+	commission    CommissionModel
 	positions     map[string]int
 	avgCost       map[string]float64
 	lastPrice     map[string]float64
@@ -27,8 +35,8 @@ type DefaultSimulator struct {
 	SuccessPct    float64
 }
 
-// New 构造，initialCash 初始资金，commission 费率模型（如 ibkr.NewCommission(ibkr.Tiered)）
-func New(initialCash float64, commission broker.CommissionModel) *DefaultSimulator {
+// NewDefaultSimulator 构造，initialCash 初始资金，commission 费率模型（如 ibkr.NewCommission(ibkr.Tiered)）
+func NewDefaultSimulator(initialCash float64, commission CommissionModel) *DefaultSimulator {
 	return &DefaultSimulator{
 		initialCash:   initialCash,
 		cash:          initialCash,
@@ -41,12 +49,8 @@ func New(initialCash float64, commission broker.CommissionModel) *DefaultSimulat
 	}
 }
 
-// 编译期断言：*DefaultSimulator 实现 broker.Account
-var _ broker.Account = (*DefaultSimulator)(nil)
-
-// ApplyFill 实现 broker.Account
+// ApplyFill 实现 Simulator
 func (s *DefaultSimulator) ApplyFill(f backtestengine.Fill) {
-
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	qty := f.Quantity
@@ -56,7 +60,7 @@ func (s *DefaultSimulator) ApplyFill(f backtestengine.Fill) {
 		(f.Time.Year() != s.lastTradeTime.Year() || f.Time.Month() != s.lastTradeTime.Month()) {
 		s.monthlyVol = 0
 	}
-	trade := broker.Trade{
+	trade := Trade{
 		Shares:     qty,
 		Price:      f.Price,
 		IsSell:     f.Side == backtestengine.SELL,
@@ -97,14 +101,14 @@ func (s *DefaultSimulator) ApplyFill(f backtestengine.Fill) {
 	}
 }
 
-// Cash 实现 broker.Account
+// Cash 实现 Simulator
 func (s *DefaultSimulator) Cash() float64 {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.cash
 }
 
-// Equity 实现 broker.Account
+// Equity 实现 Simulator
 func (s *DefaultSimulator) Equity() float64 {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -137,14 +141,14 @@ func (s *DefaultSimulator) Fees() float64 {
 	return s.fees
 }
 
-// Position 实现 broker.Account
+// Position 实现 Simulator
 func (s *DefaultSimulator) Position(symbol string) int {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.positions[symbol]
 }
 
-// UpdatePrice 实现 broker.Account
+// UpdatePrice 实现 Simulator
 func (s *DefaultSimulator) UpdatePrice(symbol string, price float64) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

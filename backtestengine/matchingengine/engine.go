@@ -3,8 +3,8 @@ package matchingengine
 import (
 	"sync"
 
-	"quantforge/backtestengine"
-	"quantforge/dataengine"
+	"github.com/sophon2000/quantforge/backtestengine"
+	"github.com/sophon2000/quantforge/dataengine"
 )
 
 // DefaultMatchingEngine 默认撮合引擎

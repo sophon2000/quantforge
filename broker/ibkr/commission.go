@@ -1,7 +1,7 @@
 package ibkr
 
 import (
-	"quantforge/broker"
+	"github.com/sophon2000/quantforge/broker"
 )
 
 // PricingMode IBKR 定价模式：阶梯 vs 固定

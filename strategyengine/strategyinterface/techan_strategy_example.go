@@ -2,10 +2,11 @@ package strategyinterface
 
 import (
 	"fmt"
-	"quantforge/dataengine"
-	"quantforge/strategyengine"
-	"quantforge/strategyengine/signalgenerator"
 	"time"
+
+	"github.com/sophon2000/quantforge/dataengine"
+	"github.com/sophon2000/quantforge/strategyengine"
+	"github.com/sophon2000/quantforge/strategyengine/signalgenerator"
 
 	"github.com/sdcoffey/techan"
 )

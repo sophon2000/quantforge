@@ -3,7 +3,7 @@ package ordermanager
 import (
 	"sync"
 
-	"quantforge/executionengine"
+	"github.com/sophon2000/quantforge/executionengine"
 )
 
 // OrderManager 订单管理器：维护订单生命周期与状态

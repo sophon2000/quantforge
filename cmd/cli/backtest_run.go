@@ -6,14 +6,14 @@ import (
 	"strconv"
 	"time"
 
-	"quantforge/backtestengine"
-	"quantforge/broker/ibkr"
-	"quantforge/broker/simulator"
-	"quantforge/dataengine"
-	"quantforge/dataengine/historicalstore"
-	"quantforge/strategyengine"
-	"quantforge/strategyengine/signalgenerator"
-	"quantforge/strategyengine/strategyinterface"
+	"github.com/sophon2000/quantforge/backtestengine"
+	"github.com/sophon2000/quantforge/broker/ibkr"
+	"github.com/sophon2000/quantforge/broker/simulator"
+	"github.com/sophon2000/quantforge/dataengine"
+	"github.com/sophon2000/quantforge/dataengine/historicalstore"
+	"github.com/sophon2000/quantforge/strategyengine"
+	"github.com/sophon2000/quantforge/strategyengine/signalgenerator"
+	"github.com/sophon2000/quantforge/strategyengine/strategyinterface"
 
 	"github.com/sdcoffey/techan"
 )

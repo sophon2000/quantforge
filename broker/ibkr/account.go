@@ -3,8 +3,8 @@ package ibkr
 import (
 	"strconv"
 
-	"quantforge/backtestengine"
-	"quantforge/broker"
+	"github.com/sophon2000/quantforge/backtestengine"
+	"github.com/sophon2000/quantforge/broker"
 
 	"github.com/scmhub/ibsync"
 )

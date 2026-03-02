@@ -1,7 +1,7 @@
 package strategyinterface
 
 import (
-	"quantforge/strategyengine/indicatorlib"
+	"github.com/sophon2000/quantforge/strategyengine/indicatorlib"
 
 	"github.com/sdcoffey/techan"
 )

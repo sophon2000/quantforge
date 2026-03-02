@@ -3,7 +3,7 @@ package signalgenerator
 import (
 	"sync"
 
-	"quantforge/strategyengine"
+	"github.com/sophon2000/quantforge/strategyengine"
 )
 
 // DefaultSignalGenerator 默认信号生成器：回调转发

@@ -1,6 +1,6 @@
 package risk
 
-import "quantforge/executionengine"
+import "github.com/sophon2000/quantforge/executionengine"
 
 // DefaultRiskManager 默认风控：仅做通过校验（不拒绝任何订单）
 type DefaultRiskManager struct{}

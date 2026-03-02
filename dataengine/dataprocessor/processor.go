@@ -1,6 +1,6 @@
 package dataprocessor
 
-import "quantforge/dataengine"
+import "github.com/sophon2000/quantforge/dataengine"
 
 // DataProcessor 数据处理器：如 Tick 聚合成 Bar、过滤、归一化等
 type DataProcessor interface {

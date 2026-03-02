@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"quantforge/dataengine"
-	"quantforge/executionengine"
-	"quantforge/strategyengine"
+	"github.com/sophon2000/quantforge/dataengine"
+	"github.com/sophon2000/quantforge/executionengine"
+	"github.com/sophon2000/quantforge/strategyengine"
 
 	"github.com/sdcoffey/big"
 	"github.com/sdcoffey/techan"
@@ -64,6 +64,7 @@ func (s *TechanStrategy) OnBar(b *dataengine.Bar) {
 		if s.signalEngine != nil {
 			s.signalEngine.OnSignal(strategyengine.Signal{Symbol: s.symbol, Signal: "BUY"})
 		}
+
 		s.record.Operate(techan.Order{
 			Side:          techan.BUY,
 			Security:      s.symbol,

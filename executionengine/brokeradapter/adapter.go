@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"quantforge/executionengine"
+	"github.com/sophon2000/quantforge/executionengine"
 )
 
 // MemoryBroker 内存经纪商适配器：用于回测或单机测试

@@ -10,7 +10,7 @@ import (
 	"github.com/sophon2000/quantforge/strategyengine"
 
 	"github.com/sdcoffey/big"
-	"github.com/sdcoffey/techan"
+	"github.com/sophon2000/techan"
 )
 
 // TechanStrategy 基于 techan.RuleStrategy 实现 Strategy：用 K 线驱动规则，触发时通过 signalEngine 发出信号

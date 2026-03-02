@@ -15,7 +15,7 @@ import (
 	"github.com/sophon2000/quantforge/strategyengine/signalgenerator"
 	"github.com/sophon2000/quantforge/strategyengine/strategyinterface"
 
-	"github.com/sdcoffey/techan"
+	"github.com/sophon2000/techan"
 )
 
 // BacktestResult 回测结果，供 API 与前端图表使用

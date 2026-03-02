@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/sdcoffey/big"
-	"github.com/sdcoffey/techan"
+	"github.com/sophon2000/techan"
 )
 
 // CSVRow 一行历史 K 线（CSV）

@@ -1,7 +1,7 @@
 package strategyinterface
 
 import (
-	"github.com/sdcoffey/techan"
+	"github.com/sophon2000/techan"
 )
 
 // BollingerBandStrategy 布林带突破策略

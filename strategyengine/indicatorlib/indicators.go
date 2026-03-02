@@ -2,7 +2,7 @@ package indicatorlib
 
 import (
 	"github.com/sdcoffey/big"
-	"github.com/sdcoffey/techan"
+	"github.com/sophon2000/techan"
 )
 
 // FormulaIndicator 公式指标（如 KDJ J）

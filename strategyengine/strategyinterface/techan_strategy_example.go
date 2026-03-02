@@ -8,7 +8,7 @@ import (
 	"github.com/sophon2000/quantforge/strategyengine"
 	"github.com/sophon2000/quantforge/strategyengine/signalgenerator"
 
-	"github.com/sdcoffey/techan"
+	"github.com/sophon2000/techan"
 )
 
 func ExampleNewTechanStrategy() {

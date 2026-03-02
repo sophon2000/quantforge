@@ -3,7 +3,7 @@ package strategyinterface
 import (
 	"github.com/sophon2000/quantforge/strategyengine/indicatorlib"
 
-	"github.com/sdcoffey/techan"
+	"github.com/sophon2000/techan"
 )
 
 // BuildBollingerStrategy 构建布林带策略

@@ -6,10 +6,11 @@ require (
 	github.com/scmhub/ibapi v0.10.44
 	github.com/scmhub/ibsync v0.10.44
 	github.com/sdcoffey/big v0.7.0
-	github.com/sdcoffey/techan v0.12.1
 	github.com/sophon2000/techan v0.0.0-20260302125438-1ccd129ccfda
 	github.com/spf13/cobra v1.10.2
 )
+
+replace github.com/sophon2000/techan => ./thirdpart/techan
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
